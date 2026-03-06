@@ -1,0 +1,16 @@
+name = "store-nvim-telemetry"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "store-nvim-telemetry"
+database_id = "72ba677b-51a5-4782-be8c-6ba71cc288a0"
+
+[triggers]
+crons = ["0 * * * *", "0 3 * * *"]
+
+[observability]
+[observability.logs]
+enabled = true
+invocation_logs = true

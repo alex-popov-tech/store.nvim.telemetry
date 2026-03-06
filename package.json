@@ -1,0 +1,23 @@
+{
+  "name": "store-nvim-telemetry",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate:local": "wrangler d1 execute store-nvim-telemetry --local --file=schema.sql",
+    "db:migrate:remote": "wrangler d1 execute store-nvim-telemetry --remote --file=schema.sql",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "hono": "^4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4",
+    "eslint": "^9",
+    "typescript": "^5",
+    "typescript-eslint": "^8",
+    "wrangler": "^4.71.0"
+  }
+}
