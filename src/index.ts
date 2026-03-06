@@ -55,6 +55,7 @@ app.post("/events", async (c) => {
     "unknown";
 
   const ipHash = await hashIP(ip);
+  const country = (c.req.raw.cf?.country as string) ?? "XX";
   const windowStart = getWindowStart();
   const db = c.env.DB;
 
@@ -114,6 +115,13 @@ app.post("/events", async (c) => {
          DO UPDATE SET count = count + 1`,
       )
       .bind(plugin_full_name, event_type),
+    db
+      .prepare(
+        `INSERT INTO user_activity (ip_hash, date, country)
+         VALUES (?, date('now'), ?)
+         ON CONFLICT (ip_hash, date) DO NOTHING`,
+      )
+      .bind(ipHash, country),
   ]);
 
   return c.json({ ok: true }, 201);
@@ -159,6 +167,70 @@ app.get("/stats", async (c) => {
     .all<{ plugin_full_name: string; views: number; installs: number }>();
 
   return c.json({ stats: result.results });
+});
+
+app.get("/active-users", async (c) => {
+  const period = c.req.query("period") ?? "week";
+  const country = c.req.query("country");
+
+  if (
+    period !== "day" &&
+    period !== "week" &&
+    period !== "month" &&
+    period !== "all"
+  ) {
+    return c.json(
+      { error: "Invalid period. Must be: day, week, month, or all" },
+      400,
+    );
+  }
+
+  const conditions: string[] = [];
+  const bindings: string[] = [];
+
+  if (period === "day") {
+    conditions.push("date >= date('now', '-1 day')");
+  } else if (period === "week") {
+    conditions.push("date >= date('now', '-7 days')");
+  } else if (period === "month") {
+    conditions.push("date >= date('now', '-30 days')");
+  }
+
+  if (country) {
+    conditions.push("country = ?");
+    bindings.push(country);
+  }
+
+  const where =
+    conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
+
+  const db = c.env.DB;
+
+  const [totalResult, byCountryResult, byDateResult] = await db.batch([
+    db
+      .prepare(`SELECT COUNT(*) AS total_user_days FROM user_activity${where}`)
+      .bind(...bindings),
+    db
+      .prepare(
+        `SELECT country, COUNT(*) AS unique_users FROM user_activity${where} GROUP BY country ORDER BY unique_users DESC`,
+      )
+      .bind(...bindings),
+    db
+      .prepare(
+        `SELECT date, COUNT(*) AS unique_users FROM user_activity${where} GROUP BY date ORDER BY date DESC`,
+      )
+      .bind(...bindings),
+  ]);
+
+  const total =
+    (totalResult.results[0] as Record<string, number>)?.total_user_days ?? 0;
+
+  return c.json({
+    period,
+    total_user_days: total,
+    by_country: byCountryResult.results,
+    by_date: byDateResult.results,
+  });
 });
 
 app.onError((err, c) => {
@@ -211,6 +283,9 @@ async function scheduled(
         ),
         db.prepare(
           `DELETE FROM rate_limits WHERE window_start < datetime('now', '-1 hour')`,
+        ),
+        db.prepare(
+          `DELETE FROM user_activity WHERE date < date('now', '-90 days')`,
         ),
       ]);
       break;

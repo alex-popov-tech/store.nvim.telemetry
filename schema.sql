@@ -28,3 +28,13 @@ CREATE TABLE IF NOT EXISTS plugin_names (
   plugin_full_name TEXT NOT NULL,
   PRIMARY KEY (plugin_full_name)
 );
+
+CREATE TABLE IF NOT EXISTS user_activity (
+  ip_hash TEXT NOT NULL,
+  date TEXT NOT NULL,
+  country TEXT NOT NULL DEFAULT 'XX',
+  PRIMARY KEY (ip_hash, date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_activity_date_country
+  ON user_activity (date, country);

@@ -79,6 +79,43 @@ curl "https://store-nvim-telemetry.alex-popov-tech.workers.dev/stats?plugin_full
 }
 ```
 
+### `GET /active-users`
+
+Get daily active user counts with country breakdown.
+
+**Query parameters:**
+- `period` (string, optional) — `week` (default), `day`, `month`, or `all`
+- `country` (string, optional) — filter to a specific country code (e.g. `US`, `DE`)
+
+```bash
+# Weekly active users (default)
+curl https://store-nvim-telemetry.alex-popov-tech.workers.dev/active-users
+
+# Daily active users
+curl "https://store-nvim-telemetry.alex-popov-tech.workers.dev/active-users?period=day"
+
+# Monthly active users from Germany
+curl "https://store-nvim-telemetry.alex-popov-tech.workers.dev/active-users?period=month&country=DE"
+```
+
+**Response:**
+```json
+{
+  "period": "week",
+  "total_user_days": 342,
+  "by_country": [
+    { "country": "US", "unique_users": 120 },
+    { "country": "DE", "unique_users": 45 }
+  ],
+  "by_date": [
+    { "date": "2026-03-06", "unique_users": 58 },
+    { "date": "2026-03-05", "unique_users": 52 }
+  ]
+}
+```
+
+> **Note:** Because IP hashes rotate daily, DAU is exact but WAU/MAU will overcount users active on multiple days. This is an intentional privacy tradeoff.
+
 ## Local Development
 
 ```bash
@@ -89,7 +126,7 @@ npm run lint               # lint
 
 ## Scheduled Jobs
 
-- **Hourly** (`0 * * * *`) — purges raw events older than 90 days and stale rate limit entries
+- **Hourly** (`0 * * * *`) — purges raw events and user activity older than 90 days, and stale rate limit entries
 - **Daily** (`0 3 * * *`) — syncs the known plugin list from [store.nvim.crawler](https://github.com/alex-popov-tech/store.nvim.crawler) releases. Only known plugins are accepted by `POST /events`.
 
 ## Privacy
