@@ -12,8 +12,9 @@ CREATE INDEX IF NOT EXISTS idx_events_dedup
 CREATE TABLE IF NOT EXISTS stats (
   plugin_full_name TEXT NOT NULL,
   event_type TEXT NOT NULL CHECK (event_type IN ('view', 'install')),
+  date TEXT NOT NULL,
   count INTEGER NOT NULL DEFAULT 0,
-  PRIMARY KEY (plugin_full_name, event_type)
+  PRIMARY KEY (plugin_full_name, event_type, date)
 );
 
 CREATE TABLE IF NOT EXISTS rate_limits (

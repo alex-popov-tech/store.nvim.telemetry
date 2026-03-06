@@ -108,9 +108,9 @@ app.post("/events", async (c) => {
       .bind(plugin_full_name, event_type, ipHash),
     db
       .prepare(
-        `INSERT INTO stats (plugin_full_name, event_type, count)
-         VALUES (?, ?, 1)
-         ON CONFLICT (plugin_full_name, event_type)
+        `INSERT INTO stats (plugin_full_name, event_type, date, count)
+         VALUES (?, ?, date('now'), 1)
+         ON CONFLICT (plugin_full_name, event_type, date)
          DO UPDATE SET count = count + 1`,
       )
       .bind(plugin_full_name, event_type),
@@ -121,22 +121,38 @@ app.post("/events", async (c) => {
 
 app.get("/stats", async (c) => {
   const pluginId = c.req.query("plugin_full_name");
+  const period = c.req.query("period") ?? "all";
 
-  let query = `
+  if (period !== "all" && period !== "week" && period !== "month") {
+    return c.json(
+      { error: "Invalid period. Must be: all, week, or month" },
+      400,
+    );
+  }
+
+  const conditions: string[] = [];
+  const bindings: string[] = [];
+
+  if (pluginId) {
+    conditions.push("plugin_full_name = ?");
+    bindings.push(pluginId);
+  }
+
+  if (period === "week") {
+    conditions.push("date >= date('now', '-7 days')");
+  } else if (period === "month") {
+    conditions.push("date >= date('now', '-30 days')");
+  }
+
+  const where = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
+
+  const query = `
     SELECT
       plugin_full_name,
       SUM(CASE WHEN event_type = 'view' THEN count ELSE 0 END) AS views,
       SUM(CASE WHEN event_type = 'install' THEN count ELSE 0 END) AS installs
-    FROM stats
-  `;
-  const bindings: string[] = [];
-
-  if (pluginId) {
-    query += " WHERE plugin_full_name = ?";
-    bindings.push(pluginId);
-  }
-
-  query += " GROUP BY plugin_full_name ORDER BY installs DESC";
+    FROM stats${where}
+    GROUP BY plugin_full_name ORDER BY installs DESC`;
 
   const result = await c.env.DB.prepare(query)
     .bind(...bindings)

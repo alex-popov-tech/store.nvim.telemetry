@@ -55,12 +55,19 @@ curl -X POST https://store-nvim-telemetry.alex-popov-tech.workers.dev/events \
 
 Get aggregated view and install counts.
 
+**Query parameters:**
+- `plugin_full_name` (string, optional) — filter to a single plugin
+- `period` (string, optional) — `all` (default), `week` (last 7 days), or `month` (last 30 days)
+
 ```bash
-# All plugins
+# All plugins, all time
 curl https://store-nvim-telemetry.alex-popov-tech.workers.dev/stats
 
-# Single plugin
-curl "https://store-nvim-telemetry.alex-popov-tech.workers.dev/stats?plugin_full_name=nvim-telescope/telescope.nvim"
+# Weekly leaderboard
+curl "https://store-nvim-telemetry.alex-popov-tech.workers.dev/stats?period=week"
+
+# Monthly stats for a single plugin
+curl "https://store-nvim-telemetry.alex-popov-tech.workers.dev/stats?plugin_full_name=nvim-telescope/telescope.nvim&period=month"
 ```
 
 **Response:**
