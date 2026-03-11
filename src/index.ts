@@ -152,7 +152,8 @@ app.get("/stats", async (c) => {
     conditions.push("date >= date('now', '-30 days')");
   }
 
-  const where = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
+  const where =
+    conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
 
   const query = `
     SELECT
@@ -256,6 +257,9 @@ async function pullPluginFullNames(): Promise<Record<string, true>> {
 
   if (!data?.items || !Array.isArray(data.items)) {
     throw new Error("Invalid db_minified.json format");
+  }
+  if (data.items.length === 0) {
+    throw new Error("No plugins found in db_minified.json");
   }
 
   return data.items
